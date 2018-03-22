@@ -1,0 +1,22 @@
+From 0639d54db4c4b09efaedd73673ab8c75a293ce76 Mon Sep 17 00:00:00 2001
+From: Dane Springmeyer <dane@mapbox.com>
+Date: Thu, 8 Jan 2015 20:57:33 -0800
+Subject: [PATCH] fix compile error with boost 1.49 - closes #2467
+
+---
+ include/mapnik/expression_grammar.hpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/mapnik/expression_grammar.hpp b/include/mapnik/expression_grammar.hpp
+index 0b48924..d19ce28 100644
+--- a/include/mapnik/expression_grammar.hpp
++++ b/include/mapnik/expression_grammar.hpp
+@@ -89,7 +89,7 @@ struct regex_replace_impl
+ #ifdef BOOST_SPIRIT_USE_PHOENIX_V3
+     template <typename T>
+ #else
+-    template <typename T0, typename T1>
++    template <typename T0, typename T1, typename T2>
+ #endif
+     struct result
+     {

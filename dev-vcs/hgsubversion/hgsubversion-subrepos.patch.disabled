@@ -1,0 +1,19 @@
+# HG changeset patch
+# User Wagner Bruna <wbruna@softwareexpress.com.br>
+# Date 1319054253 7200
+# Node ID 6f8e894a1f05442d4fc145c61f1d69f767c963a3
+# Parent  0cbf9fd89672e73165e1bb4db1ec8f7f65b95c94
+wrappers: clone must return hg.clone() result (issue300, issue306)
+
+diff --git a/hgsubversion/wrappers.py b/hgsubversion/wrappers.py
+--- a/hgsubversion/wrappers.py
++++ b/hgsubversion/wrappers.py
+@@ -476,6 +476,8 @@ def clone(orig, ui, source, dest=None, *
+ 
+         data['srcrepo'], data['dstrepo'] = orig(ui, *args, **opts)
+ 
++        return data['srcrepo'], data['dstrepo']
++
+     for opt, (section, name) in optionmap.iteritems():
+         if opt in opts and opts[opt]:
+             ui.setconfig(section, name, str(opts.pop(opt)))

@@ -1,0 +1,11 @@
+--- gdal-2.0.3/swig/ruby/RubyMakefile.mk.orig	2017-10-07 13:17:21.009931984 +0200
++++ gdal-2.0.3/swig/ruby/RubyMakefile.mk	2017-10-07 13:17:34.543839731 +0200
+@@ -41,7 +41,7 @@
+ RUBY_LIB := -l$(RUBY_SO_NAME)
+ else
+ RUBY_MODULES=$(RUBY_MODULES_LIN)
+-LDFLAGS += -Xcompiler -shared -L$(RUBY_LIB_DIR)
++LDFLAGS += -shared -L$(RUBY_LIB_DIR)
+ RUBY_LIB := -l$(RUBY_SO_NAME)
+ endif
+ 

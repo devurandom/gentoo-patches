@@ -1,0 +1,17 @@
+--- kdenlive-15.08.3/src/monitor/glwidget.cpp.orig	2015-11-14 14:56:27.391546180 +0100
++++ kdenlive-15.08.3/src/monitor/glwidget.cpp	2015-11-14 15:00:28.161984436 +0100
+@@ -36,6 +36,14 @@
+ 
+ #define USE_GL_SYNC // Use glFinish() if not defined.
+ 
++#ifndef GL_UNPACK_ROW_LENGTH
++# ifdef GL_UNPACK_ROW_LENGTH_EXT
++#  define GL_UNPACK_ROW_LENGTH GL_UNPACK_ROW_LENGTH_EXT
++# else
++#  error GL_UNPACK_ROW_LENGTH undefined
++# endif
++#endif
++
+ #ifdef QT_NO_DEBUG
+ #define check_error(fn) {}
+ #else

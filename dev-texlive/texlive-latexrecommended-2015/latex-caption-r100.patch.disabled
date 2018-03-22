@@ -1,0 +1,103 @@
+Index: texmf-dist/tex/latex/caption/subcaption.sty
+===================================================================
+--- texmf-dist/tex/latex/caption/subcaption.sty	(revision 99)
++++ texmf-dist/tex/latex/caption/subcaption.sty	(revision 100)
+@@ -6,7 +6,7 @@
+ %%
+ %% subcaption.dtx  (with options: `package')
+ %% 
+-%% Copyright (C) 1994-2013 Axel Sommerfeldt
++%% Copyright (C) 1994-2013 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+ %% 
+ %% http://sourceforge.net/projects/latex-caption/
+ %% 
+@@ -24,11 +24,17 @@
+ %% 
+ %% This Current Maintainer of this work is Axel Sommerfeldt.
+ %% 
+-%% This work consists of the files caption.ins, caption.dtx, caption2.dtx,
+-%% caption3.dtx, bicaption.dtx, ltcaption.dtx, subcaption.dtx, and newfloat.dtx,
+-%% the derived files caption.sty, caption2.sty, caption3.sty,
+-%% bicaption.sty, ltcaption.sty, subcaption.sty, and newfloat.sty,
+-%% and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
++%% This work consists of the files
++%%   CHANGELOG, README, SUMMARY, caption.ins,
++%%   caption.dtx, caption2.dtx, caption3.dtx,
++%%   bicaption.dtx, ltcaption.dtx, subcaption.dtx,
++%%   newfloat.dtx, and totalcount.dtx
++%% the derived files
++%%   caption.sty, caption2.sty, caption3.sty,
++%%   bicaption.sty, ltcaption.sty, subcaption.sty,
++%%   newfloat.sty, and totalcount.sty
++%% and the user manuals
++%%   caption-deu.tex, caption-eng.tex, and caption-rus.tex.
+ %% 
+ \NeedsTeXFormat{LaTeX2e}[1994/12/01]
+ \def\caption@tempa$Id: #1 #2 #3-#4-#5 #6${%
+Index: texmf-dist/tex/latex/caption/caption.sty
+===================================================================
+--- texmf-dist/tex/latex/caption/caption.sty	(revision 99)
++++ texmf-dist/tex/latex/caption/caption.sty	(revision 100)
+@@ -36,7 +36,6 @@
+ %% and the user manuals
+ %%   caption-deu.tex, caption-eng.tex, and caption-rus.tex.
+ %% 
+- % bicaption.sty, ltcaption.sty, subcaption.sty, and newfloat.sty,
+ \NeedsTeXFormat{LaTeX2e}[1994/12/01]
+ \def\caption@tempa$Id: #1 #2 #3-#4-#5 #6${%
+   \def\caption@tempa{#3/#4/#5 }\def\caption@tempb{#2 }}
+@@ -379,6 +378,18 @@
+       {\@dblarg{\@caption\@captype}}%
+     }}%
+   \caption@CheckCommand\caption{%
++    % beamerbaselocalstructure.sty, Joseph Wright committed 4ac715c 2013-09-04
++    \def\caption{%
++      \ifx\@captype\@undefined
++        \@latex@error{\noexpand\caption outside figure or table}\@ehd
++        \expandafter\@gobble
++      \else
++        \refstepcounter\@captype
++        \expandafter\@firstofone
++      \fi
++      {\@dblarg{\@caption\@captype}}%
++    }}%
++  \caption@CheckCommand\caption{%
+     % float.sty [2001/11/08 v1.3d Float enhancements (AL)]
+     \long\def\caption{%
+       \ifx\@captype\@undefined
+Index: texmf-dist/tex/latex/caption/caption2.sty
+===================================================================
+--- texmf-dist/tex/latex/caption/caption2.sty	(revision 99)
++++ texmf-dist/tex/latex/caption/caption2.sty	(revision 100)
+@@ -6,7 +6,7 @@
+ %%
+ %% caption2.dtx  (with options: `package')
+ %% 
+-%% Copyright (C) 1994-2013 Axel Sommerfeldt
++%% Copyright (C) 1994-2013 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+ %% 
+ %% http://sourceforge.net/projects/latex-caption/
+ %% 
+@@ -24,11 +24,17 @@
+ %% 
+ %% This Current Maintainer of this work is Axel Sommerfeldt.
+ %% 
+-%% This work consists of the files caption.ins, caption.dtx, caption2.dtx,
+-%% caption3.dtx, bicaption.dtx, ltcaption.dtx, subcaption.dtx, and newfloat.dtx,
+-%% the derived files caption.sty, caption2.sty, caption3.sty,
+-%% bicaption.sty, ltcaption.sty, subcaption.sty, and newfloat.sty,
+-%% and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
++%% This work consists of the files
++%%   CHANGELOG, README, SUMMARY, caption.ins,
++%%   caption.dtx, caption2.dtx, caption3.dtx,
++%%   bicaption.dtx, ltcaption.dtx, subcaption.dtx,
++%%   newfloat.dtx, and totalcount.dtx
++%% the derived files
++%%   caption.sty, caption2.sty, caption3.sty,
++%%   bicaption.sty, ltcaption.sty, subcaption.sty,
++%%   newfloat.sty, and totalcount.sty
++%% and the user manuals
++%%   caption-deu.tex, caption-eng.tex, and caption-rus.tex.
+ %% 
+ \NeedsTeXFormat{LaTeX2e}[1994/12/01]
+ \def\caption@tempa$Id: #1 #2 #3-#4-#5 #6${%

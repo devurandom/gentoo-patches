@@ -1,0 +1,18 @@
+commit 7e4345a9db640b852c25a11ff99df107a6960400
+Author: Juergen E. Fischer <jef@norbit.de>
+Date:   Sun Aug 20 10:51:12 2017 +0200
+
+    remove sip workaround (fixes #17038, refs #16071)
+
+diff --git a/python/core/qgscoordinatetransform.sip b/python/core/qgscoordinatetransform.sip
+index f9b7854..464952d 100644
+--- a/python/core/qgscoordinatetransform.sip
++++ b/python/core/qgscoordinatetransform.sip
+@@ -15,7 +15,6 @@
+ class QgsCoordinateTransform : QObject
+ {
+ %TypeHeaderCode
+-extern PyObject *sipExportedExceptions__core[2];  // workaround: sipExportedExceptions__core is only defined in the first sip part
+ #include <qgscoordinatetransform.h>
+ %End
+ 

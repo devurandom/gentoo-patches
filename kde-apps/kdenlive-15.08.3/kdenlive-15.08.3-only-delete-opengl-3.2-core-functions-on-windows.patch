@@ -1,0 +1,13 @@
+--- kdenlive-15.08.3/src/monitor/glwidget.cpp.orig	2015-11-14 15:12:16.220338333 +0100
++++ kdenlive-15.08.3/src/monitor/glwidget.cpp	2015-11-14 15:13:07.427887234 +0100
+@@ -1173,7 +1173,10 @@
+ FrameRenderer::~FrameRenderer()
+ {
+     delete m_context;
++#ifdef Q_OS_WIN
++	// It's only ever initialised on Windows, thus this is safe.
+     delete m_gl32;
++#endif
+ }
+ 
+ void FrameRenderer::showFrame(Mlt::Frame frame)

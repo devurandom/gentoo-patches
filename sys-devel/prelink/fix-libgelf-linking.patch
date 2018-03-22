@@ -1,0 +1,24 @@
+--- prelink/configure.in.orig	2012-10-05 16:52:08.806926806 +0200
++++ prelink/configure.in	2012-10-05 16:52:44.002996787 +0200
+@@ -39,12 +39,10 @@
+   GELFINCLUDE='-I$(top_srcdir)/gelfx32'
+ else
+   GELFINCLUDE='-I$(top_srcdir)/gelfx'
+-  AC_CHECK_HEADER(gelf.h,,[
+     GELFINCLUDE="$GELFINCLUDE "'-I$(top_srcdir)/gelf'
+     LIBGELF='../gelf/libgelf.la'
+-  ])
+ fi
+ AC_CHECK_LIB(elf,elf_begin)
+ AC_SUBST(GELFINCLUDE)
+ AC_SUBST(LIBGELF)
+ 
+--- prelink/src/Makefile.am.orig	2012-10-05 16:52:20.407621750 +0200
++++ prelink/src/Makefile.am	2012-10-05 16:53:01.235539305 +0200
+@@ -24,5 +24,5 @@
+-prelink_LDFLAGS = -all-static
+ 
+ execstack_SOURCES = execstack.c $(common_SOURCES) $(arch_SOURCES)
++execstack_LDADD = @LIBGELF@
+ 
+ extra_DIST = makecrc.c

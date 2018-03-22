@@ -1,0 +1,14 @@
+diff --git a/kwin/main.cpp b/kwin/main.cpp
+index 1052295..e94642f 100644
+--- a/kwin/main.cpp
++++ b/kwin/main.cpp
+@@ -462,6 +462,7 @@ static const char description[] = I18N_NOOP("KDE window manager");
+ extern "C"
+ KDE_EXPORT int kdemain(int argc, char * argv[])
+ {
++    XInitThreads();
+ #ifdef M_TRIM_THRESHOLD
+     // Prevent fragmentation of the heap by malloc (glibc).
+     //
+-- 
+1.8.4

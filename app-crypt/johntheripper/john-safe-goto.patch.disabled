@@ -1,0 +1,19 @@
+diff --git a/src/opencl_DES_kernel_params.h b/src/opencl_DES_kernel_params.h
+index 1acd8b9..d1586e8 100644
+--- a/src/opencl_DES_kernel_params.h
++++ b/src/opencl_DES_kernel_params.h
+@@ -14,14 +14,7 @@ typedef unsigned WORD vtype;
+  * OSX' Intel HD4000 driver [1.2(Sep25 2014 22:26:04)] fails building the
+  * "fast goto" version.
+  */
+-#if nvidia_sm_5x(DEVICE_INFO) || gpu_intel(DEVICE_INFO) ||	  \
+-	(gpu_amd(DEVICE_INFO) && DEV_VER_MAJOR >= 1573 && !defined(__Tahiti__)) || \
+-	(gpu_amd(DEVICE_INFO) && DEV_VER_MAJOR >= 1702)
+-//#warning Using 'safe goto' kernel
+ #define SAFE_GOTO
+-#else
+-//#warning Using 'fast goto' kernel
+-#endif
+
+ #if no_byte_addressable(DEVICE_INFO)
+ #define RV7xx

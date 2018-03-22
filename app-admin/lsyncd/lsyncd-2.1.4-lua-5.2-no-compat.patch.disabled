@@ -1,0 +1,160 @@
+From aba897414780a8b6933a82d429aced30849cc1de Mon Sep 17 00:00:00 2001
+From: Dennis Schridde <devurandom@gmx.net>
+Date: Tue, 18 Sep 2012 15:20:25 +0200
+Subject: [PATCH 1/2] Fix compilation with Lua 5.2 (issue #146)
+
+Use Lua 5.2 API without compatibility code
+---
+ configure.ac | 27 ---------------------------
+ inotify.c    |  2 +-
+ lsyncd.c     |  7 ++++---
+ lsyncd.h     |  2 --
+ 4 files changed, 5 insertions(+), 33 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index c95a496..20f5c08 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -68,33 +68,6 @@ else
+ 	fi
+ fi
+ 
+-_LIBS="${LIBS}"
+-_CFLAGS="${CFLAGS}"
+-_CPPFLAGS="${CPPFLAGS}"
+-LIBS="${LIBS} ${LUA_LIBS}"
+-CFLAGS="${CFLAGS} ${LUA_CFLAGS}"
+-CPPFLAGS="${CPPFLAGS} ${LUA_CFLAGS}"
+-
+-AC_MSG_CHECKING([whether Lua library was compiled with compat support])
+-AC_LINK_IFELSE(
+-	[AC_LANG_PROGRAM([
+-			#define LUA_COMPAT_ALL
+-			#include <lauxlib.h>
+-		],[luaL_register(0,0,0);])],
+-	[lua_compat_support=yes],
+-	[lua_compat_support=no]
+-)
+-AC_MSG_RESULT([${lua_compat_support}])
+-
+-if test "x${lua_compat_support}" = xno ; then
+-	AC_MSG_ERROR([Lua library needs to be compiled with compat support])
+-fi
+-
+-LIBS="${_LIBS}"
+-CFLAGS="${_CFLAGS}"
+-CPPFLAGS="${_CPPFLAGS}"
+-unset _LIBS _CFLAGS _CPPFLAGS
+-
+ AX_SUBST_L([LUA_CFLAGS], [LUA_LIBS], [LUA], [LUAC])
+ 
+ 
+diff --git a/inotify.c b/inotify.c
+index 335225a..b489dad 100644
+--- a/inotify.c
++++ b/inotify.c
+@@ -499,7 +499,7 @@ inotify_ready(
+ extern void
+ register_inotify( lua_State *L )
+ {
+-	luaL_register( L, LSYNCD_INOTIFYLIBNAME, linotfylib );
++	luaL_newlib( L, linotfylib );
+ }
+ 
+ 
+diff --git a/lsyncd.c b/lsyncd.c
+index 0e230c7..877589a 100644
+--- a/lsyncd.c
++++ b/lsyncd.c
+@@ -1086,13 +1086,14 @@ l_exec( lua_State *L )
+ 		{
+ 			int tlen;
+ 			int it;
+-			lua_checkstack( L, lua_gettop( L ) + lua_objlen( L, i ) + 1 );
++
++			lua_checkstack( L, lua_gettop( L ) + lua_rawlen( L, i ) + 1 );
+ 
+ 			// moves table to top of stack
+ 			lua_pushvalue( L, i );
+ 			lua_remove( L, i );
+ 			argc--;
+-			tlen = lua_objlen( L, -1 );
++			tlen = lua_rawlen( L, -1 );
+ 
+ 			for( it = 1; it <= tlen; it++ )
+ 			{
+@@ -1850,7 +1851,7 @@ l_jiffies_le(lua_State *L)
+ void
+ register_lsyncd( lua_State *L )
+ {
+-	luaL_register( L, LSYNCD_LIBNAME, lsyncdlib );
++	luaL_newlib( L, lsyncdlib );
+ 	lua_setglobal( L, LSYNCD_LIBNAME );
+ 
+ 	// creates the metatable for the jiffies ( timestamps ) userdata
+diff --git a/lsyncd.h b/lsyncd.h
+index fa598a7..90b878e 100644
+--- a/lsyncd.h
++++ b/lsyncd.h
+@@ -16,8 +16,6 @@
+ #define _XOPEN_SOURCE 700
+ #define _DARWIN_C_SOURCE 1
+ 
+-#define LUA_COMPAT_ALL
+-
+ // includes needed for headerfile
+ #include "config.h"
+ 
+-- 
+1.8.0
+
+From 56d6897a2a9ff8f9aa354d4350970dbb8aa990a1 Mon Sep 17 00:00:00 2001
+From: Dennis Schridde <devurandom@gmx.net>
+Date: Tue, 18 Sep 2012 15:57:41 +0200
+Subject: [PATCH 2/2] Lua 5.1 compatibility fallbacks
+
+---
+ inotify.c | 6 ++++++
+ lsyncd.c  | 9 +++++++++
+ 2 files changed, 15 insertions(+)
+
+diff --git a/inotify.c b/inotify.c
+index b489dad..cc9cd31 100644
+--- a/inotify.c
++++ b/inotify.c
+@@ -39,6 +39,12 @@
+ #include <lualib.h>
+ #include <lauxlib.h>
+ 
++/*
++| Lua 5.1 compatibility fallbacks
++*/
++#if LUA_VERSION_NUM < 502
++#   define luaL_newlib(L,l) (lua_newtable(L), luaL_register(L,NULL,l))
++#endif
+ 
+ /*
+ | Event types.
+diff --git a/lsyncd.c b/lsyncd.c
+index 877589a..678ce13 100644
+--- a/lsyncd.c
++++ b/lsyncd.c
+@@ -56,6 +56,15 @@ extern const char defaults_out[];
+ extern size_t defaults_size;
+ 
+ /*
++| Lua 5.1 compatibility fallbacks
++*/
++#if LUA_VERSION_NUM < 502
++/* lua_rawlen: Not entirely correct, but should work anyway */
++#	define lua_rawlen lua_objlen
++#	define luaL_newlib(L,l) (lua_newtable(L), luaL_register(L,NULL,l))
++#endif
++
++/*
+ | Makes sure there is one file system monitor.
+ */
+ #ifndef LSYNCD_WITH_INOTIFY
+-- 
+1.8.0
+

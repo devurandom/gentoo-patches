@@ -1,0 +1,64 @@
+--- lsyncd.c.orig	2012-09-18 14:57:19.296395919 +0200
++++ lsyncd.c	2012-09-18 15:01:35.028095831 +0200
+@@ -841,12 +841,12 @@
+ 		if (lua_istable(L, i)) {
+ 			int tlen;
+ 			int it;
+-			lua_checkstack(L, lua_gettop(L) + lua_objlen(L, i) + 1);
++			lua_checkstack(L, lua_gettop(L) + lua_rawlen(L, i) + 1);
+ 			// move table to top of stack
+ 			lua_pushvalue(L, i);
+ 			lua_remove(L, i);
+ 			argc--;
+-			tlen = lua_objlen(L, -1);
++			tlen = lua_rawlen(L, -1);
+ 			for (it = 1; it <= tlen; it++) {
+ 				lua_pushinteger(L, it);
+ 				lua_gettable(L, -2);
+@@ -1263,7 +1263,7 @@
+ 	return 0;
+ }
+ 
+-static const luaL_reg lsyncdlib[] = {
++static const luaL_Reg lsyncdlib[] = {
+ 		{"configure",     l_configure     },
+ 		{"exec",          l_exec          },
+ 		{"log",           l_log           },
+@@ -1368,7 +1368,7 @@
+ void
+ register_lsyncd(lua_State *L)
+ {
+-	luaL_register(L, "lsyncd", lsyncdlib);
++	luaL_newlib(L, lsyncdlib);
+ 	lua_setglobal(L, "lysncd");
+ 
+ 	// creates the metatable for jiffies userdata
+@@ -1676,7 +1676,7 @@
+ 	int argp = 1;
+ 
+ 	// load Lua
+-	L = lua_open();
++	L = luaL_newstate();
+ 	luaL_openlibs(L);
+ 	{
+ 		// checks the lua version
+--- inotify.c.orig	2012-09-18 15:13:52.638875600 +0200
++++ inotify.c	2012-09-18 15:14:43.850799426 +0200
+@@ -129,7 +129,7 @@
+ /**
+  * Cores inotify functions.
+  */
+-static const luaL_reg linotfylib[] = {
++static const luaL_Reg linotfylib[] = {
+ 		{"addwatch",   l_addwatch   },
+ 		{"rmwatch",    l_rmwatch    },
+ 		{NULL, NULL}
+@@ -352,7 +352,7 @@
+ register_inotify(lua_State *L)
+ {
+ 	lua_pushstring(L, "inotify");
+-	luaL_register(L, "inotify", linotfylib);
++	luaL_newlib(L, linotfylib);
+ }
+ 
+ /**

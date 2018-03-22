@@ -1,0 +1,100 @@
+diff -up simon-0.4.1/plugins/Conditions/FaceDetection/facedetectioncondition.cpp.opencv3 simon-0.4.1/plugins/Conditions/FaceDetection/facedetectioncondition.cpp
+--- simon-0.4.1/plugins/Conditions/FaceDetection/facedetectioncondition.cpp.opencv3	2013-06-23 17:57:29.000000000 -0400
++++ simon-0.4.1/plugins/Conditions/FaceDetection/facedetectioncondition.cpp	2015-08-14 05:41:30.560292279 -0400
+@@ -22,8 +22,8 @@
+ #include "createfacedetectionconditionwidget.h"
+ #include <QWidget>
+ #include "simonvision/faceanalyzer.h"
+-#include <highgui.h>
+-#include <cv.h>
++#include <opencv/highgui.h>
++#include <opencv/cv.h>
+ K_PLUGIN_FACTORY(FaceDetectionPluginFactory,
+                  registerPlugin< FaceDetectionCondition >();
+                 )
+diff -up simon-0.4.1/plugins/Conditions/LipDetection/lipdetectioncondition.cpp.opencv3 simon-0.4.1/plugins/Conditions/LipDetection/lipdetectioncondition.cpp
+--- simon-0.4.1/plugins/Conditions/LipDetection/lipdetectioncondition.cpp.opencv3	2013-06-23 17:57:29.000000000 -0400
++++ simon-0.4.1/plugins/Conditions/LipDetection/lipdetectioncondition.cpp	2015-08-14 05:41:30.561292269 -0400
+@@ -22,8 +22,8 @@
+ #include "createlipdetectionconditionwidget.h"
+ #include <QWidget>
+ #include "simonvision/lipanalyzer.h"
+-#include <highgui.h>
+-#include <cv.h>
++#include <opencv/highgui.h>
++#include <opencv/cv.h>
+ K_PLUGIN_FACTORY(LipDetectionPluginFactory,
+                  registerPlugin< LipDetectionCondition >();
+                 )
+diff -up simon-0.4.1/simonlib/simonvision/config/simonwebcamconfiguration.h.opencv3 simon-0.4.1/simonlib/simonvision/config/simonwebcamconfiguration.h
+--- simon-0.4.1/simonlib/simonvision/config/simonwebcamconfiguration.h.opencv3	2013-06-23 17:57:29.000000000 -0400
++++ simon-0.4.1/simonlib/simonvision/config/simonwebcamconfiguration.h	2015-08-14 05:41:30.561292269 -0400
+@@ -23,8 +23,8 @@
+ #include <KCModule>
+ #include <QVariantList>
+ #include<QImage>
+-#include<cv.h>
+-#include<highgui.h>
++#include <opencv/cv.h>
++#include <opencv/highgui.h>
+ #include "webcamconfigurationanalyzer.h"
+ #include "ui_simonwebcamconfiguration.h"
+ #include<QTimer>
+diff -up simon-0.4.1/simonlib/simonvision/imageanalyzer.h.opencv3 simon-0.4.1/simonlib/simonvision/imageanalyzer.h
+--- simon-0.4.1/simonlib/simonvision/imageanalyzer.h.opencv3	2013-06-23 17:57:29.000000000 -0400
++++ simon-0.4.1/simonlib/simonvision/imageanalyzer.h	2015-08-14 05:41:30.562292260 -0400
+@@ -19,8 +19,8 @@
+ 
+ #ifndef IMAGEANALYZER_H
+ #define IMAGEANALYZER_H
+-#include <cv.h>
+-#include <highgui.h>
++#include <opencv/cv.h>
++#include <opencv/highgui.h>
+ #include<QObject>
+ #include "simonvision_export.h"
+ 
+diff -up simon-0.4.1/simonlib/simonvision/simoncv.h.opencv3 simon-0.4.1/simonlib/simonvision/simoncv.h
+--- simon-0.4.1/simonlib/simonvision/simoncv.h.opencv3	2013-06-23 17:57:29.000000000 -0400
++++ simon-0.4.1/simonlib/simonvision/simoncv.h	2015-08-14 05:49:49.642654583 -0400
+@@ -1,9 +1,9 @@
+ #ifndef SIMONCV_H
+ #define SIMONCV_H
+ 
+-#include "cv.h"
+-#include "highgui.h"
+-#include "cxcore.h"
++#include <opencv/cv.h>
++#include <opencv/highgui.h>
++#include <opencv/cxcore.h>
+ #include<QImage>
+ #include "simonvision_export.h"
+ using namespace cv;
+diff -up simon-0.4.1/simonlib/simonvision/webcamdispatcher.cpp.opencv3 simon-0.4.1/simonlib/simonvision/webcamdispatcher.cpp
+--- simon-0.4.1/simonlib/simonvision/webcamdispatcher.cpp.opencv3	2013-06-23 17:57:29.000000000 -0400
++++ simon-0.4.1/simonlib/simonvision/webcamdispatcher.cpp	2015-08-14 05:41:30.562292260 -0400
+@@ -23,8 +23,8 @@
+ #include <KDebug>
+ #include<QThread>
+ #include <QDateTime>
+-#include<highgui.h>
+-#include<cv.h>
++#include <opencv/highgui.h>
++#include <opencv/cv.h>
+ #include "webcamconfiguration.h"
+ 
+ using namespace cv;
+diff -up simon-0.4.1/simonlib/simonvision/webcamdispatcher.h.opencv3 simon-0.4.1/simonlib/simonvision/webcamdispatcher.h
+--- simon-0.4.1/simonlib/simonvision/webcamdispatcher.h.opencv3	2013-06-23 17:57:29.000000000 -0400
++++ simon-0.4.1/simonlib/simonvision/webcamdispatcher.h	2015-08-14 05:41:30.563292251 -0400
+@@ -21,8 +21,8 @@
+ #define WEBCAMDISPATCHER_H
+ 
+ #include "imageanalyzer.h"
+-#include <cv.h>
+-#include <highgui.h>
++#include <opencv/cv.h>
++#include <opencv/highgui.h>
+ #include<QList>
+ #include "simonvision_export.h"
+ #include<QThread>

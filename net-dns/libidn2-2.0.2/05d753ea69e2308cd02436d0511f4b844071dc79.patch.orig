@@ -1,0 +1,259 @@
+From 05d753ea69e2308cd02436d0511f4b844071dc79 Mon Sep 17 00:00:00 2001
+From: Tim Rühsen <tim.ruehsen@gmx.de>
+Date: Mon, 17 Jul 2017 15:50:57 +0200
+Subject: [PATCH] TR46: Disable STD3 ASCII rules by default
+
+---
+ NEWS                |  8 ++++++++
+ doc/idn2.md         |  3 +++
+ lib/idn2.h.in       |  6 ++++--
+ lib/idna.c          |  5 +++++
+ lib/idna.h          |  1 +
+ lib/lookup.c        | 51 ++++++++++++++++++++++++++++++++++++++++++++-------
+ src/idn2.c          |  4 ++++
+ src/idn2.ggo        |  1 +
+ tests/test-lookup.c |  7 +++++++
+ 9 files changed, 77 insertions(+), 9 deletions(-)
+
+diff --git a/NEWS b/NEWS
+index 1cb00ff..05bc929 100644
+--- a/NEWS
++++ b/NEWS
+@@ -4,6 +4,14 @@ See the end for copying conditions.
+ 
+ * Version 2.0.3 (unreleased) [beta]
+ 
++** Activated flag IDN2_USE_STD3_ASCII_RULES. Previously
++we were eliminating non-STD3 characters from domain strings
++such as _443._tcp.example.com, or IPs 1.2.3.4/24 provided to
++libidn2 functions. That was an unexpected regression for
++applications switching from libidn and thus it is no longer
++applied by default. Use the flag IDN2_USE_STD3_ASCII_RULES
++to enable that behavior again.
++
+ ** Modernize gtk-doc build infrastructure.
+ 
+ * Version 2.0.2 (released 2017-04-27) [beta]
+diff --git a/doc/idn2.md b/doc/idn2.md
+index f93e602..872b6f3 100644
+--- a/doc/idn2.md
++++ b/doc/idn2.md
+@@ -42,6 +42,9 @@ Mandatory arguments to long options are mandatory for short options too.
+   * ```--no-tr46```:
+     Disable TR#46 processing.
+ 
++  * ```--usestd3asciirules```:
++    Enable STD3 ASCII rules.
++
+   * ```--debug```:
+     Prints debugging information.
+ 
+diff --git a/lib/idn2.h.in b/lib/idn2.h.in
+index 59c62ac..7af4585 100644
+--- a/lib/idn2.h.in
++++ b/lib/idn2.h.in
+@@ -136,7 +136,9 @@ extern "C"
+  * @IDN2_TRANSITIONAL: Perform Unicode TR46 transitional processing.
+  * @IDN2_NONTRANSITIONAL: Perform Unicode TR46 non-transitional processing.
+  * @IDN2_ALLOW_UNASSIGNED: Libidn compatibility flag, unused.
+- * @IDN2_USE_STD3_ASCII_RULES: Libidn compatibility flag, unused.
++ * @IDN2_USE_STD3_ASCII_RULES: Use STD3 ASCII rules.
++ * This is a #TR46 only flag, and will be ignored when set without either
++ * @IDN2_TRANSITIONAL or @IDN2_NONTRANSITIONAL.
+  *
+  * Flags to IDNA2008 functions, to be binary or:ed together.  Specify
+  * only 0 if you want the default behaviour.
+@@ -148,7 +150,7 @@ extern "C"
+     IDN2_TRANSITIONAL = 4,
+     IDN2_NONTRANSITIONAL = 8,
+     IDN2_ALLOW_UNASSIGNED = 16,
+-    IDN2_USE_STD3_ASCII_RULES = 32
++    IDN2_USE_STD3_ASCII_RULES = 32,
+   } idn2_flags;
+ 
+ /* IDNA2008 with UTF-8 encoded inputs. */
+diff --git a/lib/idna.c b/lib/idna.c
+index d9b20d6..5434492 100644
+--- a/lib/idna.c
++++ b/lib/idna.c
+@@ -273,6 +273,11 @@ _idn2_label_test (int what, const uint32_t * label, size_t llen)
+ 	      (!transitional && map_is (&map, TR46_FLG_DEVIATION)))
+ 	    continue;
+ 
++	  if (what & TEST_ALLOW_STD3_DISALLOWED &&
++	      (map_is (&map, TR46_FLG_DISALLOWED_STD3_VALID) ||
++	       map_is (&map, TR46_FLG_DISALLOWED_STD3_MAPPED)))
++	    continue;
++
+ 	  return transitional ? IDN2_INVALID_TRANSITIONAL :
+ 	    IDN2_INVALID_NONTRANSITIONAL;
+ 	}
+diff --git a/lib/idna.h b/lib/idna.h
+index 794ee0e..691b46b 100644
+--- a/lib/idna.h
++++ b/lib/idna.h
+@@ -50,6 +50,7 @@ enum
+   TEST_BIDI = 0x0800,
+   TEST_TRANSITIONAL = 0x1000,
+   TEST_NONTRANSITIONAL = 0x2000,
++  TEST_ALLOW_STD3_DISALLOWED = 0x4000,
+ };
+ 
+ extern int _idn2_u8_to_u32_nfc (const uint8_t * src, size_t srclen,
+diff --git a/lib/lookup.c b/lib/lookup.c
+index f7010a7..b40c082 100644
+--- a/lib/lookup.c
++++ b/lib/lookup.c
+@@ -120,15 +120,19 @@ label (const uint8_t * src, size_t srclen, uint8_t * dst, size_t * dstlen,
+   (TEST_NFC | TEST_2HYPHEN | TEST_HYPHEN_STARTEND | TEST_LEADING_COMBINING | TEST_NONTRANSITIONAL)
+ 
+ static int
+-_tr46 (const uint8_t * domain_u8, uint8_t ** out, int transitional)
++_tr46 (const uint8_t * domain_u8, uint8_t ** out, int flags)
+ {
+   size_t len, it;
+   uint32_t *domain_u32;
+   int err = IDN2_OK, rc;
++  int transitional = 0;
++  int test_flags;
++
++  if (flags & IDN2_TRANSITIONAL)
++    transitional = 1;
+ 
+   /* convert UTF-8 to UTF-32 */
+-  if (!
+-      (domain_u32 =
++  if (!(domain_u32 =
+        u8_to_u32 (domain_u8, u8_strlen (domain_u8) + 1, NULL, &len)))
+     {
+       if (errno == ENOMEM)
+@@ -173,6 +177,19 @@ _tr46 (const uint8_t * domain_u8, uint8_t ** out, int transitional)
+ 	  else
+ 	    len2++;
+ 	}
++      else if (!(flags & IDN2_USE_STD3_ASCII_RULES))
++        {
++	  if (map_is (&map, TR46_FLG_DISALLOWED_STD3_VALID))
++	    {
++	      /* valid because UseSTD3ASCIIRules=false, see #TR46 5 */
++	      len2++;
++	    }
++	  else if (map_is (&map, TR46_FLG_DISALLOWED_STD3_MAPPED))
++	    {
++	      /* mapped because UseSTD3ASCIIRules=false, see #TR46 5 */
++	      len2 += map.nmappings;
++	    }
++        }
+     }
+ 
+   uint32_t *tmp = malloc ((len2 + 1) * sizeof (uint32_t));
+@@ -215,6 +232,17 @@ _tr46 (const uint8_t * domain_u8, uint8_t ** out, int transitional)
+ 	  else
+ 	    tmp[len2++] = c;
+ 	}
++      else if (!(flags & IDN2_USE_STD3_ASCII_RULES))
++        {
++	  if (map_is (&map, TR46_FLG_DISALLOWED_STD3_VALID))
++	    {
++	      tmp[len2++] = c;
++	    }
++	  else if (map_is (&map, TR46_FLG_DISALLOWED_STD3_MAPPED))
++	    {
++	      len2 += get_map_data (tmp + len2, &map);
++	    }
++        }
+     }
+   free (domain_u32);
+ 
+@@ -267,16 +295,25 @@ _tr46 (const uint8_t * domain_u8, uint8_t ** out, int transitional)
+ 	      return rc;
+ 	    }
+ 
++	  test_flags = TR46_NONTRANSITIONAL_CHECK;
++
++	  if (!(flags & IDN2_USE_STD3_ASCII_RULES))
++	    test_flags |= TEST_ALLOW_STD3_DISALLOWED;
++
+ 	  if ((rc =
+-	       _idn2_label_test (TR46_NONTRANSITIONAL_CHECK, name_u32,
++	       _idn2_label_test (test_flags, name_u32,
+ 				 name_len)))
+ 	    err = rc;
+ 	}
+       else
+ 	{
++	  test_flags = transitional ? TR46_TRANSITIONAL_CHECK : TR46_NONTRANSITIONAL_CHECK;
++
++	  if (!(flags & IDN2_USE_STD3_ASCII_RULES))
++	    test_flags |= TEST_ALLOW_STD3_DISALLOWED;
++
+ 	  if ((rc =
+-	       _idn2_label_test (transitional ? TR46_TRANSITIONAL_CHECK :
+-				 TR46_NONTRANSITIONAL_CHECK, s, e - s)))
++	       _idn2_label_test (test_flags, s, e - s)))
+ 	    err = rc;
+ 	}
+ 
+@@ -362,7 +399,7 @@ idn2_lookup_u8 (const uint8_t * src, uint8_t ** lookupname, int flags)
+       uint8_t *out;
+       size_t outlen;
+ 
+-      rc = _tr46 (src, &out, tr46_mode == IDN2_TRANSITIONAL);
++      rc = _tr46 (src, &out, flags);
+       if (rc != IDN2_OK)
+ 	return rc;
+ 
+diff --git a/src/idn2.c b/src/idn2.c
+index 12b9e2c..fc83566 100644
+--- a/src/idn2.c
++++ b/src/idn2.c
+@@ -89,6 +89,7 @@ Mandatory arguments to long options are mandatory for short options too.\n\
+       --no-tr46            Disable TR46 processing\n\
+ "), stdout);
+       fputs (_("\
++      --nostd3asciirules   Disable STD3 ASCII rules\n\
+       --debug              Print debugging information\n\
+       --quiet              Silent operation\n\
+ "), stdout);
+@@ -222,6 +223,9 @@ main (int argc, char *argv[])
+   else if (args_info.no_tr46_given)
+     flags = 0;
+ 
++  if (flags && args_info.usestd3asciirules_given)
++    flags |= IDN2_USE_STD3_ASCII_RULES;
++
+   for (cmdn = 0; cmdn < args_info.inputs_num; cmdn++)
+     process_input (args_info.inputs[cmdn], flags | IDN2_NFC_INPUT);
+ 
+diff --git a/src/idn2.ggo b/src/idn2.ggo
+index b2fc791..3732cb5 100644
+--- a/src/idn2.ggo
++++ b/src/idn2.ggo
+@@ -19,5 +19,6 @@ option "register" r "Register label" no
+ option "tr46t" T "Enable TR46 transitional processing" flag off
+ option "tr46nt" N "Enable TR46 non-transitional processing" flag off
+ option "no-tr46" - "Disable TR46 processing" flag off
++option "usestd3asciirules" - "Enable STD3 ASCII rules" flag off
+ option "debug" - "Print debugging information" flag off
+ option "quiet" - "Silent operation" flag off
+diff --git a/tests/test-lookup.c b/tests/test-lookup.c
+index c8e9dac..7450a48 100644
+--- a/tests/test-lookup.c
++++ b/tests/test-lookup.c
+@@ -814,6 +814,13 @@ static const struct idna idna[] = {
+   },
+   /* √.com */
+   {"\xe2\x88\x9a.com", "xn--19g.com", IDN2_OK, IDN2_TRANSITIONAL},
++  /* domains with non-STD3 characters (removed by default when using TR46 transitional/non-trnasitional */
++  {"_443._tcp.example.com", "_443._tcp.example.com", IDN2_OK, 0},
++  {"_443._tcp.example.com", "_443._tcp.example.com", IDN2_OK, IDN2_TRANSITIONAL},
++  {"_443._tcp.example.com", "_443._tcp.example.com", IDN2_OK, IDN2_NONTRANSITIONAL},
++  {"_443._tcp.example.com", "443.tcp.example.com", IDN2_OK, IDN2_USE_STD3_ASCII_RULES|IDN2_NONTRANSITIONAL},
++  {"_443._tcp.example.com", "443.tcp.example.com", IDN2_OK, IDN2_USE_STD3_ASCII_RULES|IDN2_TRANSITIONAL},
++  {"_443._tcp.example.com", "_443._tcp.example.com", IDN2_OK, IDN2_USE_STD3_ASCII_RULES}, /* flag is ignored when not using TR46 */
+ };
+ 
+ static int ok = 0, failed = 0;
+--
+libgit2 0.25.0
+

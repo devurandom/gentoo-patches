@@ -1,0 +1,10 @@
+--- cryptlib.h.orig	2016-06-09 09:51:04.557194142 +0200
++++ cryptlib.h	2016-06-09 09:51:30.798062640 +0200
+@@ -122,6 +122,7 @@
+   #define C_CHR char
+   #define C_STR C_CHR *
+   #define C_RET	int
++  #define DL_EXPORT(type) type
+ #endif /* Windows vs.everything else function types */
+ 
+ /* Symbolic defines to make it clearer how the function parameters behave */

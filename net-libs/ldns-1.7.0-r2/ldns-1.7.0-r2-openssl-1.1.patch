@@ -1,0 +1,77 @@
+--- ldns-1.7.0/dnssec.c.orig	2018-03-07 19:50:02.627233466 +0000
++++ ldns-1.7.0/dnssec.c	2018-03-07 19:50:33.814231969 +0000
+@@ -23,6 +23,9 @@
+ #include <openssl/rand.h>
+ #include <openssl/err.h>
+ #include <openssl/md5.h>
++#include <openssl/bn.h>
++#include <openssl/dsa.h>
++#include <openssl/rsa.h>
+ #endif
+ 
+ ldns_rr *
+--- ldns-1.7.0/dnssec_sign.c.orig	2018-03-07 20:00:27.875203454 +0000
++++ ldns-1.7.0/dnssec_sign.c	2018-03-07 20:01:15.094201188 +0000
+@@ -17,6 +17,9 @@
+ #include <openssl/rand.h>
+ #include <openssl/err.h>
+ #include <openssl/md5.h>
++#include <openssl/bn.h>
++#include <openssl/dsa.h>
++#include <openssl/rsa.h>
+ #endif /* HAVE_SSL */
+ 
+ ldns_rr *
+--- ldns-1.7.0/dnssec_verify.c.orig	2018-03-07 20:00:16.720203990 +0000
++++ ldns-1.7.0/dnssec_verify.c	2018-03-07 20:07:38.838182769 +0000
+@@ -594,7 +594,11 @@
+ 						if (tree->parent_status[i]
+ 						    == LDNS_STATUS_SSL_ERR) {
+ 							printf("; SSL Error: ");
++#if HAVE_ERR_LOAD_CRYPTO_STRINGS
+ 							ERR_load_crypto_strings();
++#else
++							OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS, NULL);
++#endif
+ 							ERR_print_errors_fp(stdout);
+ 							printf("\n");
+ 						}
+--- ldns-1.7.0/configure.ac.orig	2018-03-07 20:06:16.285186731 +0000
++++ ldns-1.7.0/configure.ac	2018-03-07 20:07:01.489184561 +0000
+@@ -331,7 +331,7 @@
+ else
+ 	AC_MSG_RESULT([no])
+ fi
+-AC_CHECK_FUNCS([EVP_sha256 EVP_sha384 EVP_sha512 ENGINE_load_cryptodev EVP_PKEY_keygen ECDSA_SIG_get0 EVP_MD_CTX_new EVP_PKEY_base_id DSA_SIG_set0 DSA_SIG_get0 EVP_dss1 DSA_get0_pqg DSA_get0_key])
++AC_CHECK_FUNCS([EVP_sha256 EVP_sha384 EVP_sha512 ENGINE_load_cryptodev EVP_PKEY_keygen ECDSA_SIG_get0 EVP_MD_CTX_new EVP_PKEY_base_id DSA_SIG_set0 DSA_SIG_get0 EVP_dss1 DSA_get0_pqg DSA_get0_key ERR_load_crypto_strings])
+ 
+ # for macosx, see if glibtool exists and use that
+ # BSD's need to know the version...
+--- ldns-1.7.0/host2str.c.orig	2018-03-07 20:15:31.972160059 +0000
++++ ldns-1.7.0/host2str.c	2018-03-07 20:17:36.161154098 +0000
+@@ -28,6 +28,12 @@
+ #include <time.h>
+ #include <sys/time.h>
+ 
++#ifdef HAVE_SSL
++#include <openssl/bn.h>
++#include <openssl/dsa.h>
++#include <openssl/rsa.h>
++#endif
++
+ #ifndef INET_ADDRSTRLEN
+ #define INET_ADDRSTRLEN 16
+ #endif
+--- ldns-1.7.0/keys.c.orig	2018-03-07 20:15:26.291160331 +0000
++++ ldns-1.7.0/keys.c	2018-03-07 20:18:59.339150105 +0000
+@@ -18,6 +18,10 @@
+ #include <openssl/ssl.h>
+ #include <openssl/engine.h>
+ #include <openssl/rand.h>
++#include <openssl/ui.h>
++#include <openssl/bn.h>
++#include <openssl/dsa.h>
++#include <openssl/rsa.h>
+ #endif /* HAVE_SSL */
+ 
+ ldns_lookup_table ldns_signing_algorithms[] = {
