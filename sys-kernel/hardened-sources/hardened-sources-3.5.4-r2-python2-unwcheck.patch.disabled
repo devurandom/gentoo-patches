@@ -1,0 +1,27 @@
+--- linux-3.5.4-hardened-r2/arch/ia64/scripts/unwcheck.py.orig	2012-10-04 12:19:30.000000000 +0200
++++ linux-3.5.4-hardened-r2/arch/ia64/scripts/unwcheck.py	2012-10-04 12:27:48.000000000 +0200
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#!/usr/bin/python2
+ #
+ # Usage: unwcheck.py FILE
+ #
+--- linux-3.5.4/arch/ia64/Makefile.orig	2012-10-04 12:29:11.000000000 +0200
++++ linux-3.5.4/arch/ia64/Makefile	2012-10-04 12:28:47.000000000 +0200
+@@ -15,6 +15,7 @@
+ 
+ NM := $(CROSS_COMPILE)nm -B
+ READELF := $(CROSS_COMPILE)readelf
++PYTHON2 := python2
+ 
+ export AWK
+ 
+@@ -78,7 +79,7 @@
+ 	$(Q)$(MAKE) $(build)=$(boot) $@
+ 
+ unwcheck: vmlinux
+-	-$(Q)READELF=$(READELF) python $(srctree)/arch/ia64/scripts/unwcheck.py $<
++	-$(Q)READELF=$(READELF) $(PYTHON2) $(srctree)/arch/ia64/scripts/unwcheck.py $<
+ 
+ archclean:
+ 	$(Q)$(MAKE) $(clean)=$(boot)

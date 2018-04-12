@@ -1,0 +1,14 @@
+--- lxc-0.8.0-rc2/src/lxc/namespace.c.orig	2012-10-02 20:18:12.000000000 +0200
++++ lxc-0.8.0-rc2/src/lxc/namespace.c	2012-10-02 20:19:29.000000000 +0200
+@@ -34,6 +34,11 @@
+ #include "namespace.h"
+ #include "log.h"
+ 
++#ifdef __ia64__
++extern int __clone2 (int (*__fn) (void *__arg), void *__child_stack_base,
++                     size_t __child_stack_size, int __flags, void *__arg, ...);
++#endif
++
+ lxc_log_define(lxc_namespace, lxc);
+ 
+ struct clone_arg {

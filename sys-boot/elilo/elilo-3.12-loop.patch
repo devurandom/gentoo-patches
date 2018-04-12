@@ -1,0 +1,11 @@
+--- elilo.orig  2013-02-27 15:21:33.000000000 +0100
++++ /usr/sbin/elilo     2013-02-27 15:17:42.000000000 +0100
+@@ -322,6 +322,8 @@
+ 
+ mnt()
+ {
++       local loop
++
+     ## we can even create bootstrap filesystem images directly if you
+     ## ever wanted too.
+     if [ -f "$boot" ] ; then

@@ -1,0 +1,36 @@
+--- lxc-0.8.0-rc2/src/lxc/start.c.orig	2012-10-02 20:20:41.000000000 +0200
++++ lxc-0.8.0-rc2/src/lxc/start.c	2012-10-02 20:24:13.000000000 +0200
+@@ -127,6 +127,11 @@
+ #include "sync.h"
+ #include "namespace.h"
+ 
++#ifdef __ia64__
++extern int __clone2 (int (*__fn) (void *__arg), void *__child_stack_base,
++                     size_t __child_stack_size, int __flags, void *__arg, ...);
++#endif
++
+ lxc_log_define(lxc_start, lxc);
+ 
+ static int match_fd(int fd)
+@@ -442,7 +447,7 @@
+ 	FILE *f = fopen("/proc/sys/kernel/ctrl-alt-del", "r");
+ 	int ret, cmd, v;
+         long stack_size = 4096;
+-        void *stack = alloca(stack_size) + stack_size;
++        void *stack = alloca(stack_size);
+         int status;
+         pid_t pid;
+ 
+@@ -459,7 +464,11 @@
+ 	}
+ 	cmd = v ? LINUX_REBOOT_CMD_CAD_ON : LINUX_REBOOT_CMD_CAD_OFF;
+ 
+-        pid = clone(container_reboot_supported, stack, CLONE_NEWPID | SIGCHLD, &cmd);
++#ifdef __ia64__
++        pid = __clone2(container_reboot_supported, stack, stack_size, CLONE_NEWPID | SIGCHLD, &cmd);
++#else
++        pid = clone(container_reboot_supported, stack + stack_size, CLONE_NEWPID | SIGCHLD, &cmd);
++#endif
+         if (pid < 0) {
+                 SYSERROR("failed to clone\n");
+                 return -1;
