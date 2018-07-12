@@ -1,0 +1,52 @@
+From 82b3edcdff7f453e6393e9fc83bd6335191df491 Mon Sep 17 00:00:00 2001
+From: Dennis Schridde <devurandom@gmx.net>
+Date: Thu, 12 Jul 2018 07:19:20 +0200
+Subject: [PATCH] Remove inclusion of pcre.h from files already including
+ COLLADABaseUtils/include/COLLADABUPcreCompiledPattern.h
+
+In the previous commit COLLADABaseUtils/include/COLLADABUPcreCompiledPattern.h
+ was changed to already include this header.
+---
+ COLLADABaseUtils/src/COLLADABUPcreCompiledPattern.cpp     | 1 -
+ COLLADABaseUtils/src/COLLADABUURI.cpp                     | 2 +-
+ COLLADASaxFrameworkLoader/src/COLLADASaxFWLSidAddress.cpp | 2 --
+ 3 files changed, 1 insertion(+), 4 deletions(-)
+
+diff --git a/COLLADABaseUtils/src/COLLADABUPcreCompiledPattern.cpp b/COLLADABaseUtils/src/COLLADABUPcreCompiledPattern.cpp
+index 26cb47c2..6dbc84dc 100644
+--- a/COLLADABaseUtils/src/COLLADABUPcreCompiledPattern.cpp
++++ b/COLLADABaseUtils/src/COLLADABUPcreCompiledPattern.cpp
+@@ -11,7 +11,6 @@
+ #include "COLLADABUStableHeaders.h"
+ #include "COLLADABUPcreCompiledPattern.h"
+ 
+-#include "pcre.h"
+ 
+ namespace COLLADABU
+ {
+diff --git a/COLLADABaseUtils/src/COLLADABUURI.cpp b/COLLADABaseUtils/src/COLLADABUURI.cpp
+index 590f3d70..1dc05f07 100644
+--- a/COLLADABaseUtils/src/COLLADABUURI.cpp
++++ b/COLLADABaseUtils/src/COLLADABUURI.cpp
+@@ -15,7 +15,7 @@
+ #include "COLLADABUHashFunctions.h"
+ 
+ #include <algorithm>
+-#include "pcre.h"
++
+ 
+ namespace COLLADABU
+ {
+diff --git a/COLLADASaxFrameworkLoader/src/COLLADASaxFWLSidAddress.cpp b/COLLADASaxFrameworkLoader/src/COLLADASaxFWLSidAddress.cpp
+index 77dba34b..59a635ea 100644
+--- a/COLLADASaxFrameworkLoader/src/COLLADASaxFWLSidAddress.cpp
++++ b/COLLADASaxFrameworkLoader/src/COLLADASaxFWLSidAddress.cpp
+@@ -12,8 +12,6 @@ for details please see LICENSE file or the website
+ #include "COLLADASaxFWLSidAddress.h"
+ #include "COLLADABUPcreCompiledPattern.h"
+ 
+-#include "pcre.h"
+-
+ 
+ namespace COLLADASaxFWL
+ {
