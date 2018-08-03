@@ -1,0 +1,10 @@
+--- qbs-src-1.12.0/src/lib/corelib/tools/tools.pri.origin	2018-07-21 11:22:12.319473668 +0300
++++ qbs-src-1.12.0/src/lib/corelib/tools/tools.pri	2018-07-21 11:24:32.614465908 +0300
+@@ -132,6 +132,7 @@
+         $$PWD/settings.h \
+         $$PWD/settingsmodel.h \
+         $$PWD/setupprojectparameters.h \
++        $$PWD/settingsrepresentation.h \
+         $$PWD/toolchains.h \
+         $$PWD/version.h
+     tools_headers.path = $${QBS_INSTALL_PREFIX}/include/qbs/tools
