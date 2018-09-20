@@ -1,0 +1,22 @@
+--- a/50-dracut.install.orig	2018-03-10 16:13:22.528416139 -0000
++++ b/50-dracut.install	2018-03-10 16:15:04.523411244 -0000
+@@ -24,6 +24,10 @@
+                 && exit 0
+         fi
+ 
++        if [[ -f /etc/kernel/dracut-options ]]; then
++            read -r -d '' -a DRACUT_OPTIONS < /etc/kernel/dracut-options
++	fi
++
+         if [[ -f /etc/kernel/cmdline ]]; then
+             read -r -d '' -a BOOT_OPTIONS < /etc/kernel/cmdline
+         elif [[ -f /usr/lib/kernel/cmdline ]]; then
+@@ -42,7 +46,7 @@
+                 break
+             fi
+         done
+-	dracut ${noimageifnotneeded:+--noimageifnotneeded} "$BOOT_DIR_ABS/$INITRD" "$KERNEL_VERSION"
++	dracut ${DRACUT_OPTIONS} ${noimageifnotneeded:+--noimageifnotneeded} "$BOOT_DIR_ABS/$INITRD" "$KERNEL_VERSION"
+         ret=$?
+ 	;;
+     remove)
