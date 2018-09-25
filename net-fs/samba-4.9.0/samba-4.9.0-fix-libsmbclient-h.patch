@@ -1,0 +1,10 @@
+--- samba-4.9.0/source3/include/libsmbclient.h       2018-09-20 08:17:24.755000000 +0300
++++ /tmp/libsmbclient.h 2018-09-20 08:17:09.567000000 +0300
+@@ -78,7 +78,8 @@
+ #include <sys/statvfs.h>
+ #include <stdint.h>
+ #include <fcntl.h>
+ #include <utime.h>
++#include <time.h>
+ 
+ #define SMBC_BASE_FD        10000 /* smallest file descriptor returned */
