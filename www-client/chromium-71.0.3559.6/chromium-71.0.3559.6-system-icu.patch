@@ -1,0 +1,185 @@
+Replace arrays with std::vector objects, since zero-length arrays are not permitted in C++.
+kIsHangulArray was zero-length array.
+Functionality provided by std::vector objects allows to simplify code and drop usage of deprecated arraysize().
+
+--- /third_party/blink/renderer/platform/text/character.cc
++++ /third_party/blink/renderer/platform/text/character.cc
+@@ -33,6 +33,7 @@
+ #include <unicode/uobject.h>
+ #include <unicode/uscript.h>
+ #include <algorithm>
++#include <vector>
+ #include "third_party/blink/renderer/platform/text/icu_error.h"
+ #include "third_party/blink/renderer/platform/wtf/std_lib_extras.h"
+ #include "third_party/blink/renderer/platform/wtf/text/string_builder.h"
+@@ -48,22 +49,19 @@
+ namespace blink {
+ 
+ #if defined(USING_SYSTEM_ICU)
+-static icu::UnicodeSet* createUnicodeSet(const UChar32* characters,
+-                                         size_t charactersCount,
+-                                         const UChar32* ranges,
+-                                         size_t rangesCount) {
++static icu::UnicodeSet* createUnicodeSet(std::vector<UChar32> characters,
++                                         std::vector<UChar32> ranges) {
+   icu::UnicodeSet* unicodeSet = new icu::UnicodeSet();
+-  for (size_t i = 0; i < charactersCount; i++)
+-    unicodeSet->add(characters[i]);
+-  for (size_t i = 0; i < rangesCount; i += 2)
+-    unicodeSet->add(ranges[i], ranges[i + 1]);
++  for (auto i = characters.cbegin(); i != characters.cend(); i++)
++    unicodeSet->add(*i);
++  for (auto i = ranges.cbegin(); i != ranges.cend(); i += 2)
++    unicodeSet->add(*i, *(i + 1));
+   unicodeSet->freeze();
+   return unicodeSet;
+ }
+ 
+-#define CREATE_UNICODE_SET(name)                                      \
+-  createUnicodeSet(name##Array, arraysize(name##Array), name##Ranges, \
+-                   arraysize(name##Ranges))
++#define CREATE_UNICODE_SET(name)                \
++  createUnicodeSet(name##Array, name##Ranges)
+ 
+ #define RETURN_HAS_PROPERTY(c, name)            \
+   static icu::UnicodeSet* unicodeSet = nullptr; \
+--- /third_party/blink/renderer/platform/text/character_property_data_generator.cc
++++ /third_party/blink/renderer/platform/text/character_property_data_generator.cc
+@@ -8,6 +8,7 @@
+ #include <cassert>
+ #include <cstring>
+ #include <memory>
++#include <vector>
+ #include "third_party/blink/renderer/platform/text/character_property.h"
+ #if !defined(USING_SYSTEM_ICU)
+ #define MUTEX_H  // Prevent compile failure of utrie2.h on Windows
+@@ -21,29 +22,24 @@
+ #else
+ 
+ const UChar32 kMaxCodepoint = 0x10FFFF;
+-#define ARRAY_LENGTH(a) (sizeof(a) / sizeof((a)[0]))
+ 
+ static void SetRanges(CharacterProperty* values,
+-                      const UChar32* ranges,
+-                      size_t length,
++                      std::vector<UChar32> ranges,
+                       CharacterProperty value) {
+-  assert(length % 2 == 0);
+-  const UChar32* end = ranges + length;
+-  for (; ranges != end; ranges += 2) {
+-    assert(ranges[0] <= ranges[1] && ranges[1] <= kMaxCodepoint);
+-    for (UChar32 c = ranges[0]; c <= ranges[1]; c++)
++  assert(ranges.size() % 2 == 0);
++  for (auto i = ranges.cbegin(); i != ranges.cend(); i += 2) {
++    assert(*i <= *(i + 1) && *(i + 1) <= kMaxCodepoint);
++    for (UChar32 c = *i; c <= *(i + 1); c++)
+       values[c] |= value;
+   }
+ }
+ 
+ static void SetValues(CharacterProperty* values,
+-                      const UChar32* begin,
+-                      size_t length,
++                      std::vector<UChar32> characters,
+                       CharacterProperty value) {
+-  const UChar32* end = begin + length;
+-  for (; begin != end; begin++) {
+-    assert(*begin <= kMaxCodepoint);
+-    values[*begin] |= value;
++  for (auto i = characters.cbegin(); i != characters.cend(); i++) {
++    assert(*i <= kMaxCodepoint);
++    values[*i] |= value;
+   }
+ }
+ 
+@@ -73,10 +69,8 @@
+   memset(values.get(), 0, sizeof(CharacterProperty) * kSize);
+ 
+ #define SET(name)                                                   \
+-  SetRanges(values.get(), name##Ranges, ARRAY_LENGTH(name##Ranges), \
+-            CharacterProperty::name);                               \
+-  SetValues(values.get(), name##Array, ARRAY_LENGTH(name##Array),   \
+-            CharacterProperty::name);
++  SetRanges(values.get(), name##Ranges, CharacterProperty::name);   \
++  SetValues(values.get(), name##Array, CharacterProperty::name);
+ 
+   SET(kIsCJKIdeographOrSymbol);
+   SET(kIsUprightInMixedVertical);
+--- /third_party/blink/renderer/platform/text/character_property_data_generator.h
++++ /third_party/blink/renderer/platform/text/character_property_data_generator.h
+@@ -6,10 +6,11 @@
+ #define THIRD_PARTY_BLINK_RENDERER_PLATFORM_TEXT_CHARACTER_PROPERTY_DATA_GENERATOR_H_
+ 
+ #include <unicode/uobject.h>
++#include <vector>
+ 
+ namespace blink {
+ 
+-static const UChar32 kIsCJKIdeographOrSymbolArray[] = {
++static std::vector<UChar32> kIsCJKIdeographOrSymbolArray = {
+     // 0x2C7 Caron, Mandarin Chinese 3rd Tone
+     0x2C7,
+     // 0x2CA Modifier Letter Acute Accent, Mandarin Chinese 2nd Tone
+@@ -32,7 +33,7 @@
+     // Emoji.
+     0x1F100, 0x1F004, 0x1F0CF, 0x1F18E};
+ 
+-static const UChar32 kIsCJKIdeographOrSymbolRanges[] = {
++static std::vector<UChar32> kIsCJKIdeographOrSymbolRanges = {
+     // STAFF OF AESCULAPIUS..SCALES for emoji sequences for doctor and judge
+     // professions.
+     0x2695, 0x2696,
+@@ -114,10 +115,10 @@
+ // http://www.unicode.org/reports/tr50/
+ // Taken from the corresponding data file:
+ // http://www.unicode.org/Public/vertical/revision-16/VerticalOrientation-16.txt
+-static const UChar32 kIsUprightInMixedVerticalArray[] = {
++static std::vector<UChar32> kIsUprightInMixedVerticalArray = {
+     0x000A7, 0x000A9, 0x000AE, 0x000B1, 0x000D7, 0x000F7};
+ 
+-static const UChar32 kIsUprightInMixedVerticalRanges[] = {
++static std::vector<UChar32> kIsUprightInMixedVerticalRanges = {
+     0x000BC, 0x000BE,
+     // Spacing Modifier Letters (Part of)
+     0x002EA, 0x002EB,
+@@ -212,11 +213,11 @@
+ };
+ 
+ // https://html.spec.whatwg.org/multipage/scripting.html#prod-potentialcustomelementname
+-static const UChar32 kIsPotentialCustomElementNameCharArray[] = {
++static std::vector<UChar32> kIsPotentialCustomElementNameCharArray = {
+     '-', '.', '_', 0xB7,
+ };
+ 
+-static const UChar32 kIsPotentialCustomElementNameCharRanges[] = {
++static std::vector<UChar32> kIsPotentialCustomElementNameCharRanges = {
+     '0',    '9',    'a',    'z',    0xC0,    0xD6,    0xD8,   0xF6,
+     0xF8,   0x2FF,  0x300,  0x37D,  0x37F,   0x1FFF,  0x200C, 0x200D,
+     0x203F, 0x2040, 0x2070, 0x218F, 0x2C00,  0x2FEF,  0x3001, 0xD7FF,
+@@ -224,14 +225,14 @@
+ };
+ 
+ // http://unicode.org/reports/tr9/#Directional_Formatting_Characters
+-static const UChar32 kIsBidiControlArray[] = {0x061C, 0x200E, 0x200F};
++static std::vector<UChar32> kIsBidiControlArray = {0x061C, 0x200E, 0x200F};
+ 
+-static const UChar32 kIsBidiControlRanges[] = {
++static std::vector<UChar32> kIsBidiControlRanges = {
+     0x202A, 0x202E, 0x2066, 0x2069,
+ };
+ 
+ // https://unicode.org/Public/UNIDATA/Blocks.txt
+-static const UChar32 kIsHangulRanges[] = {
++static std::vector<UChar32> kIsHangulRanges = {
+     // Hangul Jamo
+     0x1100, 0x11FF,
+     // Hangul Compatibility Jamo
+@@ -247,7 +248,7 @@
+     0xFFA0, 0xFFDC,
+ };
+ 
+-static const UChar32 kIsHangulArray[] = {};
++static std::vector<UChar32> kIsHangulArray = {};
+ 
+ }  // namespace blink
+ 
