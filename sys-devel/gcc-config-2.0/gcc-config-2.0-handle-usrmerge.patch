@@ -1,0 +1,31 @@
+Handle the case where /lib and /usr/lib are pointing to the same directory
+
+Previously, with USE=-split-usr (/usr merge), we would delete libunwind.so
+every time we switched profiles.
+
+Closes: https://bugs.gentoo.org/667020
+
+Signed-Off-By: Dennis Schridde <devurandom@gmx.net>
+--- a/gcc-config.orig	2018-12-02 18:26:50.592567325 +0100
++++ b/gcc-config	2018-12-02 19:01:07.177300049 +0100
+@@ -295,6 +295,12 @@
+ 	eval $(grep -h '^LDPATH=' "${GCC_ENV_D}"/${CHOST}-* | tail -1)
+ 	LDPATH=${LDPATH%%:*}
+ 
++	local libdir="${EROOT}${GENTOO_LIBDIR}"
++	local usrlibdir="${EROOT}usr/${GENTOO_LIBDIR}"
++	# If /lib and /usr/lib point to the same directory, e.g. with USE=-split-usr
++	# and usrmerge, we do not need the following safety net.
++	[ "${usrlibdir}" -ef "${libdir}" ] && return 0
++
+ 	# If /usr isn't a sep mount, then don't bother with linking stuff.
+ 	if ln "${ROOT}/${LDPATH}/libgcc.a" "${EROOT}"/lib/.gcc.config.$$ 2>/dev/null ; then
+ 		rm -f "${EROOT}"/lib/.gcc.config.$$
+@@ -312,7 +318,6 @@
+ 	# Only bother with this stuff for the native ABI.  We assume the user
+ 	# doesn't have critical binaries for non-native ABIs which is fair.
+ 	local gcclib
+-	local libdir="${EROOT}${GENTOO_LIBDIR}"
+ 	mkdir -p "${libdir}"/.gcc.config.new || return 0 # !?!?!
+ 	for gcclib in gcc_s unwind ; do
+ 		# This assumes that we always have the .so symlink,
