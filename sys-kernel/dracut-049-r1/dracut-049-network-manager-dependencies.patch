@@ -1,0 +1,20 @@
+--- dracut-049/modules.d/35network-manager/module-setup.sh.orig	2019-02-12 09:00:38.404105073 +0100
++++ dracut-049/modules.d/35network-manager/module-setup.sh	2019-02-12 09:02:15.567236637 +0100
+@@ -4,7 +4,7 @@
+ check() {
+     local _program
+ 
+-    require_binaries sed grep || return 1
++    require_binaries basename sed grep || return 1
+ 
+     # do not add this module by default
+     return 255
+@@ -26,7 +26,7 @@
+ 
+     _nm_version=$(NetworkManager --version)
+ 
+-    inst_multiple sed grep
++    inst_multiple basename sed grep
+ 
+     inst NetworkManager
+     inst /usr/libexec/nm-initrd-generator
