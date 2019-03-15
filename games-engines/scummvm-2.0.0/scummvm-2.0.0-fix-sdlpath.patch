@@ -1,0 +1,13 @@
+--- scummvm-2.0.0/configure.orig	2019-03-13 20:34:11.685407674 +0100
++++ scummvm-2.0.0/configure	2019-03-13 20:34:26.548628649 +0100
+@@ -400,7 +400,9 @@
+ 				echo $_sdlconfig
+ 				# Save the prefix
+ 				_sdlpath=$path_dir
+-				if test `basename $path_dir` = bin ; then
++				echo "TESTING: '$path_dir'"
++				if test `basename $path_dir` = bin || test `basename $path_dir` = sbin ; then
++					echo "TESTED: '$path_dir' SUCCESS"
+ 					_sdlpath=`dirname $path_dir`
+ 				fi
+ 				# break at first sdl-config found in path
