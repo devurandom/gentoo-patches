@@ -1,0 +1,221 @@
+From 938abd9535663d45a8ec88d5fa6acc0af8e8fd13 Mon Sep 17 00:00:00 2001
+From: Ben Noordhuis <info@bnoordhuis.nl>
+Date: Tue, 28 Jan 2020 11:01:32 +0100
+Subject: [PATCH] src: use __executable_start for linux hugepages
+
+`__executable_start` is provided by GNU's and LLVM's default linker
+scripts, obviating the need to plug in a custom linker script.
+
+The problem with our bespoke linker script is that it works with ld.bfd
+but not ld.gold and cannot easily be ported because the latter linker
+doesn't understand the `INSERT BEFORE` directive.
+
+The /proc/self/maps scanner is updated to account for the fact that
+there are a number of sections between `&__executable_start` and
+the start of the .text section.
+
+Fortunately, those sections are all mapped into the same memory segment
+so we only need to look at the next line to find the start of our text
+segment.
+
+Fixes: https://github.com/nodejs/node/issues/31520
+
+PR-URL: https://github.com/nodejs/node/pull/31547
+Reviewed-By: Anna Henningsen <anna@addaleax.net>
+Reviewed-By: Gus Caplan <me@gus.host>
+Reviewed-By: James M Snell <jasnell@gmail.com>
+Reviewed-By: Rich Trott <rtrott@gmail.com>
+Reviewed-By: David Carlier <devnexen@gmail.com>
+---
+ node.gyp                               |  3 +-
+ node.gypi                              | 16 -----
+ src/large_pages/ld.implicit.script     | 10 ----
+ src/large_pages/ld.implicit.script.lld |  3 -
+ src/large_pages/node_large_page.cc     | 83 ++++++++++++++------------
+ 5 files changed, 47 insertions(+), 68 deletions(-)
+ delete mode 100644 src/large_pages/ld.implicit.script
+ delete mode 100644 src/large_pages/ld.implicit.script.lld
+
+diff --git a/node.gyp b/node.gyp
+index 8a13f15d708d..7a45989006ae 100644
+--- a/node.gyp
++++ b/node.gyp
+@@ -845,7 +845,8 @@
+           ],
+         }],
+         [ 'OS in "linux freebsd mac" and '
+-          'target_arch=="x64"', {
++          'target_arch=="x64" and '
++          'node_target_type=="executable"', {
+           'defines': [ 'NODE_ENABLE_LARGE_CODE_PAGES=1' ],
+           'sources': [
+             'src/large_pages/node_large_page.cc',
+diff --git a/node.gypi b/node.gypi
+index e6f5872cc754..a83c63e23da7 100644
+--- a/node.gypi
++++ b/node.gypi
+@@ -306,22 +306,6 @@
+       'ldflags': [ '-Wl,-z,relro',
+                    '-Wl,-z,now' ]
+     }],
+-    [ 'OS=="linux" and '
+-      'target_arch=="x64" and '
+-      'llvm_version=="0.0"', {
+-      'ldflags': [
+-        '-Wl,-T',
+-        '<!(echo "$(pwd)/src/large_pages/ld.implicit.script")',
+-      ]
+-    }],
+-    [ 'OS=="linux" and '
+-      'target_arch=="x64" and '
+-      'llvm_version!="0.0"', {
+-      'ldflags': [
+-        '-Wl,-T',
+-        '<!(echo "$(pwd)/src/large_pages/ld.implicit.script.lld")',
+-      ]
+-    }],
+     [ 'node_use_openssl=="true"', {
+       'defines': [ 'HAVE_OPENSSL=1' ],
+       'conditions': [
+diff --git a/src/large_pages/ld.implicit.script b/src/large_pages/ld.implicit.script
+deleted file mode 100644
+index 7f12e4bd7df9..000000000000
+--- a/src/large_pages/ld.implicit.script
++++ /dev/null
+@@ -1,10 +0,0 @@
+-  SECTIONS {
+-    .lpstub            : {
+-       *libc.a:*(.text .text.*)
+-       *(.lpstub)
+-     }
+-  }
+-  PROVIDE (__nodetext = .);
+-  PROVIDE (_nodetext = .);
+-  PROVIDE (nodetext = .);
+-  INSERT BEFORE .text;
+diff --git a/src/large_pages/ld.implicit.script.lld b/src/large_pages/ld.implicit.script.lld
+deleted file mode 100644
+index b85510bcf07e..000000000000
+--- a/src/large_pages/ld.implicit.script.lld
++++ /dev/null
+@@ -1,3 +0,0 @@
+-  PROVIDE (__nodetext = .);
+-  PROVIDE (_nodetext = .);
+-  PROVIDE (nodetext = .);
+diff --git a/src/large_pages/node_large_page.cc b/src/large_pages/node_large_page.cc
+index 252ccba15780..ce58e32e719b 100644
+--- a/src/large_pages/node_large_page.cc
++++ b/src/large_pages/node_large_page.cc
+@@ -65,7 +65,11 @@
+ // Use madvise with MADV_HUGEPAGE to use Anonymous 2M Pages
+ // If successful copy the code there and unmap the original region.
+ 
+-extern char __nodetext;
++#if defined(__linux__)
++extern "C" {
++extern char __executable_start;
++}  // extern "C"
++#endif  // defined(__linux__)
+ 
+ namespace node {
+ 
+@@ -116,17 +120,6 @@ static struct text_region FindNodeTextRegion() {
+     return nregion;
+   }
+ 
+-  std::string exename;
+-  {
+-      char selfexe[PATH_MAX];
+-
+-      size_t size = sizeof(selfexe);
+-      if (uv_exepath(selfexe, &size))
+-        return nregion;
+-
+-      exename = std::string(selfexe, size);
+-  }
+-
+   while (std::getline(ifs, map_line)) {
+     std::istringstream iss(map_line);
+     iss >> std::hex >> start;
+@@ -136,26 +129,42 @@ static struct text_region FindNodeTextRegion() {
+     iss >> offset;
+     iss >> dev;
+     iss >> inode;
+-    if (inode != 0) {
+-      std::string pathname;
+-      iss >> pathname;
+-      if (pathname == exename && permission == "r-xp") {
+-        uintptr_t ntext = reinterpret_cast<uintptr_t>(&__nodetext);
+-        if (ntext >= start && ntext < end) {
+-          char* from = reinterpret_cast<char*>(hugepage_align_up(ntext));
+-          char* to = reinterpret_cast<char*>(hugepage_align_down(end));
+-
+-          if (from < to) {
+-            size_t size = to - from;
+-            nregion.found_text_region = true;
+-            nregion.from = from;
+-            nregion.to = to;
+-            nregion.total_hugepages = size / hps;
+-          }
+-          break;
+-        }
+-      }
+-    }
++
++    if (inode == 0)
++      continue;
++
++    std::string pathname;
++    iss >> pathname;
++
++    if (start != reinterpret_cast<uintptr_t>(&__executable_start))
++      continue;
++
++    // The next line is our .text section.
++    if (!std::getline(ifs, map_line))
++      break;
++
++    iss = std::istringstream(map_line);
++    iss >> std::hex >> start;
++    iss >> dash;
++    iss >> std::hex >> end;
++    iss >> permission;
++
++    if (permission != "r-xp")
++      break;
++
++    char* from = reinterpret_cast<char*>(hugepage_align_up(start));
++    char* to = reinterpret_cast<char*>(hugepage_align_down(end));
++
++    if (from >= to)
++      break;
++
++    size_t size = to - from;
++    nregion.found_text_region = true;
++    nregion.from = from;
++    nregion.to = to;
++    nregion.total_hugepages = size / hps;
++
++    break;
+   }
+ 
+   ifs.close();
+@@ -408,14 +417,12 @@ int MapStaticCodeToLargePages() {
+     return -1;
+   }
+ 
+-#if defined(__linux__) || defined(__FreeBSD__)
+-  if (r.from > reinterpret_cast<void*>(&MoveTextRegionToLargePages))
+-    return MoveTextRegionToLargePages(r);
++#if defined(__FreeBSD__)
++  if (r.from < reinterpret_cast<void*>(&MoveTextRegionToLargePages))
++    return -1;
++#endif
+ 
+-  return -1;
+-#elif defined(__APPLE__)
+   return MoveTextRegionToLargePages(r);
+-#endif
+ }
+ 
+ bool IsLargePagesEnabled() {
