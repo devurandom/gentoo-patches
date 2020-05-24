@@ -1,0 +1,47 @@
+--- /dev/null	2020-05-24 08:03:47.034041225 +0200
++++ icedtea-3.16.0/patches/icedtea-3.16.0-gcc-10-39a7914e14a0.patch	2020-05-24 09:35:25.083943599 +0200
+@@ -0,0 +1,44 @@
++
++# HG changeset patch
++# User sgehwolf
++# Date 1589215018 -3600
++# Node ID 39a7914e14a0c73ecc80091724c833b9f0410d47
++# Parent  493a0176587ec5917ab4a64c0760a131e9d0b7b4
++8233880: Support compilers with multi-digit major version numbers
++Summary: Also includes JDK-8151841 version changes regressed by JDK-8034788
++Reviewed-by: aph, andrew
++
++diff -r 493a0176587e -r 39a7914e14a0 common/autoconf/generated-configure.sh
++--- openjdk/common/autoconf/generated-configure.sh	Tue May 05 18:39:49 2020 +0100
+++++ openjdk/common/autoconf/generated-configure.sh	Mon May 11 17:36:58 2020 +0100
++@@ -28000,7 +28000,7 @@
++     COMPILER_VERSION_STRING=`$ECHO $COMPILER_VERSION_OUTPUT | \
++         $SED -e 's/ *Copyright .*//'`
++     COMPILER_VERSION_NUMBER=`$ECHO $COMPILER_VERSION_OUTPUT | \
++-        $SED -e 's/^.* \([1-9]\.[0-9.]*\) .*$/\1/'`
+++        $SED -e 's/^.* \([1-9][0-9]*\.[0-9.]*\) .*$/\1/'`
++   elif test  "x$TOOLCHAIN_TYPE" = xclang; then
++     # clang --version output typically looks like
++     #    Apple LLVM version 5.0 (clang-500.2.79) (based on LLVM 3.3svn)
++@@ -29741,7 +29741,7 @@
++     COMPILER_VERSION_STRING=`$ECHO $COMPILER_VERSION_OUTPUT | \
++         $SED -e 's/ *Copyright .*//'`
++     COMPILER_VERSION_NUMBER=`$ECHO $COMPILER_VERSION_OUTPUT | \
++-        $SED -e 's/^.* \([1-9]\.[0-9.]*\) .*$/\1/'`
+++        $SED -e 's/^.* \([1-9][0-9]*\.[0-9.]*\) .*$/\1/'`
++   elif test  "x$TOOLCHAIN_TYPE" = xclang; then
++     # clang --version output typically looks like
++     #    Apple LLVM version 5.0 (clang-500.2.79) (based on LLVM 3.3svn)
++diff -r 493a0176587e -r 39a7914e14a0 common/autoconf/toolchain.m4
++--- openjdk/common/autoconf/toolchain.m4	Tue May 05 18:39:49 2020 +0100
+++++ openjdk/common/autoconf/toolchain.m4	Mon May 11 17:36:58 2020 +0100
++@@ -433,7 +433,7 @@
++     COMPILER_VERSION_STRING=`$ECHO $COMPILER_VERSION_OUTPUT | \
++         $SED -e 's/ *Copyright .*//'`
++     COMPILER_VERSION_NUMBER=`$ECHO $COMPILER_VERSION_OUTPUT | \
++-        $SED -e 's/^.* \(@<:@1-9@:>@\.@<:@0-9.@:>@*\) .*$/\1/'`
+++        $SED -e 's/^.* \(@<:@1-9@:>@@<:@0-9@:>@*\.@<:@0-9.@:>@*\) .*$/\1/'`
++   elif test  "x$TOOLCHAIN_TYPE" = xclang; then
++     # clang --version output typically looks like
++     #    Apple LLVM version 5.0 (clang-500.2.79) (based on LLVM 3.3svn)
++
