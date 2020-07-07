@@ -1,0 +1,129 @@
+From ead86d28971593ab3c0adbc9ffe3c2458ccbc623 Mon Sep 17 00:00:00 2001
+From: Dennis Schridde <devurandom@gmx.net>
+Date: Sun, 5 Jul 2020 22:38:49 +0200
+Subject: [PATCH] Idempotent CREATE and DELETE
+
+If CREATE fails with an ALREADYEXISTS response code, that is not an error
+since the intended result (the object existing at the target location)
+has been achieved.
+
+Likewise, if DELETE fails with an NONEXISTENT response code, that is
+not an error since the intended result (the object being gone from
+the target location) has been achieved.
+
+Please note that for RENAME response code ALREADYEXISTS *is* an error
+since the content of the source folder was not moved as intended.
+
+cf. https://tools.ietf.org/html/rfc5530#section-3
+
+BUG: 423672
+---
+ src/createjob.cpp | 27 +++++++++++++++++++++++++++
+ src/createjob.h   |  1 +
+ src/deletejob.cpp | 27 +++++++++++++++++++++++++++
+ src/deletejob.h   |  1 +
+ 4 files changed, 56 insertions(+)
+
+diff --git a/src/createjob.cpp b/src/createjob.cpp
+index 9daff8d..9e0ee20 100644
+--- a/src/createjob.cpp
++++ b/src/createjob.cpp
+@@ -42,6 +42,33 @@ void CreateJob::doStart()
+     d->tags << d->sessionInternal()->sendCommand("CREATE", '\"' + KIMAP::encodeImapFolderName(d->mailBox.toUtf8()) + '\"');
+ }
+ 
++void CreateJob::handleResponse(const Response &response)
++{
++    Q_D(CreateJob);
++
++    if (!response.content.isEmpty() &&
++        d->tags.contains(response.content.first().toString())) {
++        if (response.content.size() >= 2 &&
++            response.content[1].toString() == "NO") {
++            for (auto it = response.responseCode.cbegin(), end = response.responseCode.cend();
++                 it != end; ++it) {
++                // ALREADYEXISTS can be considered a success during CREATE
++                // cf. https://tools.ietf.org/html/rfc5530#section-3
++                if (it->toString() == "ALREADYEXISTS") {
++                    // Code copied from handleErrorReplies:
++                    d->tags.removeAll(response.content.first().toString());
++                    if (d->tags.isEmpty()) {   // Only emit result when the last command returned
++                        emitResult();
++                    }
++                    return;
++                }
++            }
++        }
++    }
++
++    handleErrorReplies(response);
++}
++
+ void CreateJob::setMailBox(const QString &mailBox)
+ {
+     Q_D(CreateJob);
+diff --git a/src/createjob.h b/src/createjob.h
+index 3b8f60a..57ec1b4 100644
+--- a/src/createjob.h
++++ b/src/createjob.h
+@@ -57,6 +57,7 @@ public:
+ 
+ protected:
+     void doStart() override;
++    void handleResponse(const Response &response) override;
+ };
+ 
+ }
+diff --git a/src/deletejob.cpp b/src/deletejob.cpp
+index 8e93ef2..8de6c0c 100644
+--- a/src/deletejob.cpp
++++ b/src/deletejob.cpp
+@@ -42,6 +42,33 @@ void DeleteJob::doStart()
+     d->tags << d->sessionInternal()->sendCommand("DELETE", '\"' + KIMAP::encodeImapFolderName(d->mailBox.toUtf8()) + '\"');
+ }
+ 
++void DeleteJob::handleResponse(const Response &response)
++{
++    Q_D(DeleteJob);
++
++    if (!response.content.isEmpty() &&
++        d->tags.contains(response.content.first().toString())) {
++        if (response.content.size() >= 2 &&
++            response.content[1].toString() == "NO") {
++            for (auto it = response.responseCode.cbegin(), end = response.responseCode.cend();
++                 it != end; ++it) {
++                // NONEXISTENT can be considered a success during DELETE
++                // cf. https://tools.ietf.org/html/rfc5530#section-3
++                if (it->toString() == "NONEXISTENT") {
++                    // Code copied from handleErrorReplies:
++                    d->tags.removeAll(response.content.first().toString());
++                    if (d->tags.isEmpty()) {   // Only emit result when the last command returned
++                        emitResult();
++                    }
++                    return;
++                }
++            }
++        }
++    }
++
++    handleErrorReplies(response);
++}
++
+ void DeleteJob::setMailBox(const QString &mailBox)
+ {
+     Q_D(DeleteJob);
+diff --git a/src/deletejob.h b/src/deletejob.h
+index a73376a..fa83c95 100644
+--- a/src/deletejob.h
++++ b/src/deletejob.h
+@@ -53,6 +53,7 @@ public:
+ 
+ protected:
+     void doStart() override;
++    void handleResponse(const Response &response) override;
+ };
+ 
+ }
+-- 
+2.27.0
+
