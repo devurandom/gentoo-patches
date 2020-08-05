@@ -1,0 +1,15 @@
+https://bugs.gentoo.org/735800
+
+--- a/CMakeLists.txt	2020-07-04 00:33:53.000000000 +0300
++++ b/CMakeLists.txt	2020-08-04 03:03:19.826911770 +0300
+@@ -70,8 +70,9 @@
+ if (HAVE_POPPLER)
+     string(REPLACE "." ";" _poppler_version_components ${Poppler_VERSION})
+     list(GET _poppler_version_components 0 POPPLER_VERSION_MAJOR)
+-    list(GET _poppler_version_components 1 POPPLER_VERSION_MINOR)
++    list(GET _poppler_version_components 1 POPPLER_VERSION_MINOR_TMP)
+     list(GET _poppler_version_components 2 POPPLER_VERSION_PATCH)
++    math(EXPR POPPLER_VERSION_MINOR "${POPPLER_VERSION_MINOR_TMP}" OUTPUT_FORMAT DECIMAL)
+ endif()
+ 
+ if (TARGET ZXing::ZXing OR TARGET ZXing::Core)
