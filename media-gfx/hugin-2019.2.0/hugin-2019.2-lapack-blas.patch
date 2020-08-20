@@ -1,0 +1,32 @@
+levmar uses Xgemm, a BLAS function, if built with -DHAVE_LAPACK
+--- hugin-2019.2.0/CMakeLists.txt.orig	2020-08-20 22:48:22.907952199 +0200
++++ hugin-2019.2.0/CMakeLists.txt	2020-08-20 22:49:36.971598517 +0200
+@@ -472,9 +472,15 @@
+   FIND_PACKAGE(LAPACK)
+   IF(LAPACK_FOUND)
+     MESSAGE(STATUS "LAPACK found (${LAPACK_LIBRARIES})")
+-  ELSE(LAPACK_FOUND)
+-    MESSAGE(STATUS "LAPACK not found, using LU-based solver")
++    FIND_PACKAGE(BLAS)
++    IF(BLAS_FOUND)
++      MESSAGE(STATUS "BLAS found (${BLAS_LIBRARIES})")
++    ENDIF(BLAS_FOUND)
+   ENDIF(LAPACK_FOUND)
++  IF(NOT BLAS_FOUND OR NOT LAPACK_FOUND)
++    MESSAGE(STATUS "BLAS or LAPACK not found, using LU-based solver")
++    SET(LAPACK_FOUND OFF)
++  ENDIF(NOT BLAS_FOUND OR NOT LAPACK_FOUND)
+ ENDIF(ENABLE_LAPACK)
+ 
+ OPTION(USE_GDKBACKEND_X11 "Enforce GDK_BACKEND=x11 for Hugin as workaround for wxWidgets bug (not supporting wxGLCanvas on Wayland)" OFF)
+--- hugin-2019.2.0/src/hugin_base/CMakeLists.txt.orig	2020-08-20 21:56:15.436078470 +0200
++++ hugin-2019.2.0/src/hugin_base/CMakeLists.txt	2020-08-20 21:58:58.028292039 +0200
+@@ -168,7 +168,7 @@
+ 
+ TARGET_LINK_LIBRARIES(huginbase huginlevmar ${VIGRA_LIBRARIES} 
+         ${Boost_LIBRARIES} ${EXIV2_LIBRARIES} ${PANO_LIBRARIES}
+-        ${TIFF_LIBRARIES} ${LAPACK_LIBRARIES}
++        ${TIFF_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES}
+         ${OPENGL_GLEW_LIBRARIES} Threads::Threads
+         ${SQLITE3_LIBRARIES} ${LCMS2_LIBRARIES})
+ 
