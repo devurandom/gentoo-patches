@@ -1,0 +1,13 @@
+Index: qgis-3.20.0/cmake/FindPyQt5.py
+===================================================================
+--- qgis-3.20.0.orig/cmake/FindPyQt5.py
++++ qgis-3.20.0/cmake/FindPyQt5.py
+@@ -58,7 +58,7 @@ else:  # Code for SIP v5
+     import shutil
+     cfg = {
+         'pyqt_mod_dir': os.path.dirname(PyQt5.__file__),
+-        'pyqt_sip_dir': os.path.join(get_python_lib(plat_specific=1), "PyQt5", "bindings"),
++        'pyqt_sip_dir': "/usr/share/sip/PyQt5",
+         'pyqt_bin_dir': os.path.dirname(shutil.which("pyuic5")),
+     }
+ 
