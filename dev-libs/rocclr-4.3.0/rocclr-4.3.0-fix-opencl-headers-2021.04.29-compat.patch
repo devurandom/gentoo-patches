@@ -1,0 +1,31 @@
+From 8243fe4ca68ab54306cd1a218ff13c20eaf85551 Mon Sep 17 00:00:00 2001
+From: Dennis Schridde <devurandom@gmx.net>
+Date: Mon, 6 Sep 2021 12:07:47 +0200
+Subject: [PATCH] Fix OpenCL headers 2021.04.29 compatibility
+
+OpenCL headers 2021.04.29 moved `CL_COMMAND_GL_FENCE_SYNC_OBJECT_KHR` into
+a different header.  (See issue referenced below for details.)
+
+See-also: https://github.com/KhronosGroup/OpenCL-Headers/issues/145
+See-also: https://bugs.gentoo.org/790164
+---
+ platform/command.hpp | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/platform/command.hpp b/platform/command.hpp
+index 47bc74ac..838737a5 100644
+--- a/platform/command.hpp
++++ b/platform/command.hpp
+@@ -44,7 +44,8 @@
+ #include "platform/activity.hpp"
+ #include "platform/command_utils.hpp"
+ 
+-#include "CL/cl_ext.h"
++#include <CL/cl_ext.h>
++#include <CL/cl_gl.h>
+ 
+ #include <algorithm>
+ #include <atomic>
+-- 
+2.33.0
+
