@@ -1,0 +1,25 @@
+From ead44adcd3eea08bfff2ba835943317706b76a73 Mon Sep 17 00:00:00 2001
+From: Wayne Davison <wayne@opencoder.net>
+Date: Thu, 25 Feb 2021 12:28:18 -0800
+Subject: [PATCH] Allow the generator's msg iobuf to get bigger too.
+
+---
+ io.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/io.c b/io.c
+index b50a066c..cc70ce88 100644
+--- a/io.c
++++ b/io.c
+@@ -962,9 +962,9 @@ int send_msg(enum msgcode code, const char *buf, size_t len, int convert)
+ #endif
+ 		needed = len + 4 + 3;
+ 	if (iobuf.msg.len + needed > iobuf.msg.size) {
+-		if (!am_receiver)
++		if (am_sender)
+ 			perform_io(needed, PIO_NEED_MSGROOM);
+-		else { /* We allow the receiver to increase their iobuf.msg size to avoid a deadlock. */
++		else { /* We sometimes allow the iobuf.msg size to increase to avoid a deadlock. */
+ 			size_t old_size = iobuf.msg.size;
+ 			restore_iobuf_size(&iobuf.msg);
+ 			realloc_xbuf(&iobuf.msg, iobuf.msg.size * 2);
